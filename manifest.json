@@ -1,1 +1,20 @@
-[]
+[
+    {
+        "guid": "561f5530-ec1f-4bb0-9dd4-1efbff63ed87",
+        "name": "HDHomeRun EPG",
+        "description": "HDHomeRun EPG polls a HDHomeRun device's EPG (via SiliconDust's cloud XMLTV API) on a schedule, remaps the channel ids to match the device's tuner lineup, and writes the result as an XMLTV file. Point Jellyfin's built-in XMLTV guide provider at the generated file (path or URL, shown on the plugin's page) once, and the guide stays current automatically with no channel mapping and no external scripts or cron jobs required.\n",
+        "overview": "Auto-refreshing XMLTV guide generated from a HDHomeRun device's own EPG.",
+        "owner": "jtczrt",
+        "category": "Live TV",
+        "versions": [
+            {
+                "version": "2026.7.18.1754",
+                "changelog": "### Initial release - Auto-discovers the HDHomeRun device and generates an XMLTV guide with channel ids\n  pre-mapped to the tuner lineup\n- Scheduled background refresh with a configurable interval - Config page with live status, one-click refresh, and a copyable path/URL for Jellyfin's\n  built-in XMLTV guide provider\n",
+                "targetAbi": "10.11.0.0",
+                "sourceUrl": "https://github.com/JTCozart/jellyfin-hdhomerun-guide-extractor/releases/download/v20260718.1754/hdhomerun-epg_2026.7.18.1754.zip",
+                "checksum": "4c64bfe2564e3041c0b1ad812e051563",
+                "timestamp": "2026-07-18T21:56:05Z"
+            }
+        ]
+    }
+]
