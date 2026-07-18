@@ -1,0 +1,115 @@
+name: 'Release Plugin'
+
+# Cut a release by pushing a timestamp tag of the form vYYYYMMDD.HHMM, e.g.:
+#   git tag v20260611.1430 && git push origin v20260611.1430
+#
+# The tag is mapped to a 4-part Jellyfin plugin version YYYY.M.D.HHMM (e.g.
+# 2026.6.11.1430). Because the version is the timestamp, every new tag is strictly
+# greater than the previous one, so Jellyfin always treats it as a newer build.
+# The workflow builds with JPRM, creates a GitHub Release for the tag and attaches
+# the packaged plugin zip. You can also run it manually (workflow_dispatch) with an
+# explicit 4-part version.
+
+on:
+  push:
+    tags:
+      # vYYYYMMDD.HHMM  (8 digits, a dot, 4 digits)
+      - 'v[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].[0-9][0-9][0-9][0-9]'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Explicit 4-part version (e.g. 2026.6.11.1430)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install JPRM
+        run: python -m pip install jprm
+
+      - name: Resolve version
+        id: ver
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            TAG="${{ github.ref_name }}"
+            TS="${TAG#v}"
+            if [[ ! "$TS" =~ ^[0-9]{8}\.[0-9]{4}$ ]]; then
+              echo "::error::Tag '$TAG' is not of the form vYYYYMMDD.HHMM"
+              exit 1
+            fi
+            DATE="${TS%.*}"   # YYYYMMDD
+            TIME="${TS#*.}"   # HHMM
+            YEAR="${DATE:0:4}"
+            MONTH=$((10#${DATE:4:2}))
+            DAY=$((10#${DATE:6:2}))
+            HHMM=$((10#${TIME}))
+            VERSION="${YEAR}.${MONTH}.${DAY}.${HHMM}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Resolved plugin version: ${VERSION}"
+
+      - name: Build plugin package
+        id: build
+        run: |
+          mkdir -p artifacts
+          ZIP=$(jprm --verbosity=debug plugin build . \
+            --version "${{ steps.ver.outputs.version }}" \
+            --output ./artifacts)
+          echo "zip=${ZIP}" >> "$GITHUB_OUTPUT"
+          ls -l ./artifacts
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jellyfin-hdhomerun-guide-extractor-${{ steps.ver.outputs.version }}
+          path: ./artifacts/*.zip
+
+      - name: Create release and attach package
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: HDHomeRun EPG ${{ steps.ver.outputs.version }}
+          generate_release_notes: true
+          files: ./artifacts/*.zip
+
+      - name: Update plugin repository manifest
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          ZIP=$(ls artifacts/*.zip | head -n1)
+          BASENAME=$(basename "$ZIP")
+          URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${BASENAME}"
+
+          # The manifest is maintained on master; the workflow ran against the tag.
+          git fetch origin master
+          git checkout -B master origin/master
+          [ -f manifest.json ] || echo "[]" > manifest.json
+
+          jprm repo add "$GITHUB_WORKSPACE/manifest.json" "$ZIP" -U "$URL"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json
+          git commit -m "Add ${{ steps.ver.outputs.version }} to plugin repository manifest" || echo "manifest unchanged"
+          git push origin master

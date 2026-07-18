@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <RootNamespace>Jellyfin.Plugin.HdhrEpg</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Provided by the Jellyfin server at runtime, so we compile against them but exclude
+         their runtime assets. This avoids version conflicts and keeps the packaged plugin to
+         a single DLL with no dependencies to ship. -->
+    <!-- Pin to the SERVER version, not a floating range: a plugin compiled against a newer
+         Jellyfin.Controller than the running server fails to load and shows as unsupported.
+         10.11.7 is the floor we support; it loads on 10.11.7 and any newer 10.11.x server. -->
+    <PackageReference Include="Jellyfin.Controller" Version="10.11.7">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Include="Jellyfin.Model" Version="10.11.7">
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Configuration\configPage.html" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,22 @@
+name: 'Build Plugin'
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**/*.md'
+      - 'manifest.json'
+      - 'docs/**'
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - '**/*.md'
+      - 'manifest.json'
+      - 'docs/**'
+  workflow_dispatch:
+
+jobs:
+  call:
+    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/build.yaml@master

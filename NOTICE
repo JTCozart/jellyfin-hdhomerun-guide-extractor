@@ -1,0 +1,30 @@
+HDHomeRun EPG for Jellyfin
+Copyright (c) 2026 jtczrt (JTCozart)
+
+This product is licensed under the MIT License. See the LICENSE file for the
+full license text.
+
+This plugin is an independent, community project. It is not affiliated with,
+endorsed by, or sponsored by the Jellyfin project, SiliconDust, or the
+HDHomeRun product line. "Jellyfin" and "HDHomeRun" are trademarks of their
+respective owners.
+
+The channel-id remapping approach (matching a HDHomeRun device's tuner lineup
+to SiliconDust's cloud XMLTV feed by display name) follows the same approach
+as IncubusVictim's HDHomeRunEPG-to-XmlTv (GPL) Python script, reimplemented
+independently in C# as a native Jellyfin plugin; no code from that project is
+reused or redistributed.
+
+------------------------------------------------------------------------------
+Third-party components and acknowledgements
+------------------------------------------------------------------------------
+
+- Jellyfin (GPL-2.0-or-later) — https://jellyfin.org
+  The Jellyfin.Controller and Jellyfin.Model packages are referenced at build
+  time to compile against the plugin API. They are provided by the Jellyfin
+  server at runtime and are not redistributed with this plugin.
+
+- jellyfin-plugin-repository-manager / JPRM (GPL-3.0-or-later)
+  https://github.com/oddstr13/jellyfin-plugin-repository-manager
+  Used in continuous integration to package the plugin and maintain the
+  repository manifest. Not redistributed with this plugin.

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>HDHomeRun EPG</title>
+</head>
+<body>
+<div id="hdhrEpgConfigPage" data-role="page" class="page type-interior pluginConfigurationPage">
+    <style>
+        .he-root { max-width: 900px; margin: 0 auto; }
+        .he-header { display: flex; align-items: center; justify-content: space-between; gap: 1em; flex-wrap: wrap; margin-bottom: 1.2em; }
+        .he-header h1 { margin: 0; }
+        .he-sub { opacity: .65; margin: .2em 0 0; font-size: .9em; }
+
+        .he-card { background: rgba(127,127,127,.08); border: 1px solid rgba(127,127,127,.18); border-radius: 10px; padding: 1.1em 1.2em; margin-bottom: 1.6em; }
+        .he-card-head { display: flex; align-items: center; justify-content: space-between; gap: 1em; flex-wrap: wrap; margin-bottom: .8em; }
+        .he-card-head h2 { margin: 0; font-size: 1.15em; }
+
+        .he-status { display: flex; align-items: center; gap: .6em; margin-bottom: 1em; }
+        .he-dot { width: .7em; height: .7em; border-radius: 50%; flex: 0 0 auto; background: #8b8b8b; }
+        .he-dot.ok { background: #52b54b; }
+        .he-dot.err { background: #e0344b; }
+        .he-dot.busy { background: #f8a01c; animation: he-pulse 1s ease-in-out infinite; }
+        @keyframes he-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+        .he-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1em; margin-bottom: 1em; }
+        .he-kpi { background: rgba(127,127,127,.08); border: 1px solid rgba(127,127,127,.18); border-radius: 10px; padding: .9em 1em; }
+        .he-kpi-label { opacity: .65; font-size: .8em; text-transform: uppercase; letter-spacing: .04em; }
+        .he-kpi-value { font-size: 1.5em; font-weight: 600; line-height: 1.3; margin-top: .1em; word-break: break-word; }
+
+        .he-copyrow { display: flex; align-items: stretch; gap: .5em; }
+        .he-copyrow input { flex: 1; min-width: 0; background: rgba(127,127,127,.12); color: inherit; border: 1px solid rgba(127,127,127,.3); border-radius: 6px; padding: .5em .7em; font-family: monospace; font-size: .85em; }
+        .he-copybtn { flex: 0 0 auto; }
+
+        .he-note { background: rgba(0,164,220,.08); border: 1px solid rgba(0,164,220,.25); border-radius: 8px; padding: .8em 1em; font-size: .9em; }
+        .he-note ol { margin: .4em 0 0; padding-left: 1.3em; }
+        .he-note li { margin: .3em 0; }
+        .he-error { background: rgba(224,52,75,.08); border: 1px solid rgba(224,52,75,.35); border-radius: 8px; padding: .8em 1em; font-size: .88em; font-family: monospace; white-space: pre-wrap; word-break: break-word; }
+        .he-muted { opacity: .65; }
+        .he-field-label { margin: 0 0 .8em; }
+        .he-dot.warn { background: #f8a01c; }
+
+        .he-devices { display: flex; flex-direction: column; gap: .6em; margin-bottom: 1em; }
+        .he-device-row { display: flex; align-items: flex-end; gap: .6em; }
+        .he-device-row .inputContainer { flex: 1; margin: 0; }
+        .he-device-row .he-device-name { flex: 0 0 40%; }
+        .he-device-remove { flex: 0 0 auto; }
+    </style>
+
+    <div data-role="content">
+        <div class="content-primary">
+            <div class="he-root">
+
+                <header class="he-header">
+                    <div>
+                        <h1>HDHomeRun EPG</h1>
+                        <p class="he-sub">Auto-generated XMLTV guide from your HDHomeRun device.</p>
+                    </div>
+                    <button is="emby-button" type="button" id="heRefresh" class="raised">
+                        <span class="material-icons" aria-hidden="true">refresh</span>
+                        <span>Refresh now</span>
+                    </button>
+                </header>
+
+                <section class="he-card">
+                    <div class="he-card-head"><h2>Status</h2></div>
+                    <div class="he-status">
+                        <span class="he-dot" id="heDot"></span>
+                        <span id="heStatusText" class="he-muted">Loading…</span>
+                    </div>
+                    <div class="he-kpis">
+                        <div class="he-kpi"><div class="he-kpi-label">Channels</div><div class="he-kpi-value" id="heChannels">—</div></div>
+                        <div class="he-kpi"><div class="he-kpi-label">Programmes</div><div class="he-kpi-value" id="hePrograms">—</div></div>
+                        <div class="he-kpi"><div class="he-kpi-label">Last success</div><div class="he-kpi-value" id="heLastSuccess" style="font-size:1.05em">—</div></div>
+                    </div>
+                    <div class="he-error" id="heErrorBox" hidden></div>
+                </section>
+
+                <section class="he-card">
+                    <div class="he-card-head"><h2>Connect to Jellyfin's guide provider</h2></div>
+                    <p class="he-field-label">File path (works for any setup, including Docker &mdash; it's read by the server itself):</p>
+                    <div class="he-copyrow">
+                        <input type="text" id="heFilePath" readonly />
+                        <button is="emby-button" type="button" class="raised he-copybtn" data-copy-target="heFilePath">
+                            <span class="material-icons" aria-hidden="true">content_copy</span>
+                        </button>
+                    </div>
+                    <div class="he-note" style="margin-top:1.2em;">
+                        One-time setup:
+                        <ol>
+                            <li>Save your settings below and click <strong>Refresh now</strong> until Status shows success.</li>
+                            <li>Go to <strong>Dashboard &rarr; Live TV &rarr; Guide Data Providers &rarr; Add</strong>.</li>
+                            <li>Choose <strong>XMLTV</strong> and paste in the file path above.</li>
+                        </ol>
+                        From then on this plugin keeps the file current automatically, on the schedule below.
+                    </div>
+                </section>
+
+                <section class="he-card">
+                    <div class="he-card-head"><h2>Settings</h2></div>
+                    <form id="heSettingsForm">
+                        <p class="he-field-label">HDHomeRun devices</p>
+                        <div class="he-devices" id="heDevices"></div>
+                        <button is="emby-button" type="button" id="heAddDevice" class="raised">
+                            <span class="material-icons" aria-hidden="true">add</span>
+                            <span>Add device</span>
+                        </button>
+                        <div class="fieldDescription" style="margin-top:.6em;">
+                            Hostname or IP address of each HDHomeRun device on your network. Guides from all
+                            devices are merged into one file; channels the devices share (e.g. redundant
+                            tuners on the same feed) are only listed once.
+                        </div>
+                        <div class="inputContainer" style="margin-top:1.4em;">
+                            <label class="inputLabel inputLabelUnfocused" for="heInterval">Refresh interval (hours)</label>
+                            <input is="emby-input" type="number" id="heInterval" min="1" max="168" />
+                            <div class="fieldDescription">How often to re-fetch the guide from the devices.</div>
+                        </div>
+                        <button is="emby-button" type="submit" class="raised button-submit block">
+                            <span>Save</span>
+                        </button>
+                    </form>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            var pluginId = '561f5530-ec1f-4bb0-9dd4-1efbff63ed87';
+            var page;
+
+            function $(id) { return page.querySelector('#' + id); }
+
+            function fmtWhen(value) {
+                if (!value) { return 'never'; }
+                var d = new Date(value);
+                if (isNaN(d)) { return value; }
+                var diff = (Date.now() - d.getTime()) / 1000;
+                if (diff < 60) { return 'just now'; }
+                if (diff < 3600) { return Math.floor(diff / 60) + 'm ago'; }
+                if (diff < 86400) { return Math.floor(diff / 3600) + 'h ago'; }
+                return d.toLocaleString();
+            }
+
+            function apiUrl(path) { return ApiClient.getUrl('HdhrEpg/' + path); }
+
+            function loadStatus() {
+                return ApiClient.getJSON(apiUrl('Status')).then(function (s) {
+                    $('heFilePath').value = s.FilePath || '';
+                    $('heChannels').textContent = s.ChannelCount || 0;
+                    $('hePrograms').textContent = s.ProgramCount || 0;
+                    $('heLastSuccess').textContent = fmtWhen(s.LastSuccessUtc);
+
+                    var dot = $('heDot');
+                    var text = $('heStatusText');
+                    var errorBox = $('heErrorBox');
+                    // A run that succeeded (possibly with per-device warnings) sets LastSuccessUtc
+                    // to the same instant as LastRunUtc; a fully failed run leaves LastSuccessUtc
+                    // at its previous value while LastRunUtc moves forward.
+                    var lastRunSucceeded = !!s.LastRunUtc && s.LastRunUtc === s.LastSuccessUtc;
+
+                    dot.className = 'he-dot';
+                    if (s.IsRunning) {
+                        dot.classList.add('busy');
+                        text.textContent = 'Refreshing…';
+                        errorBox.hidden = true;
+                    } else if (lastRunSucceeded && s.LastError) {
+                        dot.classList.add('warn');
+                        text.textContent = 'Guide refreshed with warnings';
+                        errorBox.hidden = false;
+                        errorBox.textContent = s.LastError;
+                    } else if (s.LastError) {
+                        dot.classList.add('err');
+                        text.textContent = 'Last refresh failed (' + fmtWhen(s.LastRunUtc) + ')';
+                        errorBox.hidden = false;
+                        errorBox.textContent = s.LastError;
+                    } else if (s.LastSuccessUtc) {
+                        dot.classList.add('ok');
+                        text.textContent = 'Guide is up to date';
+                        errorBox.hidden = true;
+                    } else {
+                        text.textContent = 'Not refreshed yet — click "Refresh now" to generate the guide.';
+                        errorBox.hidden = true;
+                    }
+                    return s;
+                });
+            }
+
+            function pollWhileRunning() {
+                loadStatus().then(function (s) {
+                    if (s.IsRunning) {
+                        setTimeout(pollWhileRunning, 2000);
+                    }
+                });
+            }
+
+            function refreshNow() {
+                var btn = $('heRefresh');
+                btn.disabled = true;
+                $('heDot').className = 'he-dot busy';
+                $('heStatusText').textContent = 'Refreshing…';
+                ApiClient.ajax({ type: 'POST', url: apiUrl('Refresh'), dataType: 'json' })
+                    .then(function () { btn.disabled = false; loadStatus(); })
+                    .catch(function () { btn.disabled = false; loadStatus(); });
+                setTimeout(pollWhileRunning, 1500);
+            }
+
+            function copyField(targetId) {
+                var input = $(targetId);
+                input.select();
+                input.setSelectionRange(0, 99999);
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(input.value);
+                } else {
+                    document.execCommand('copy');
+                }
+            }
+
+            function addDeviceRow(device) {
+                device = device || { Host: '', Name: '' };
+                var row = document.createElement('div');
+                row.className = 'he-device-row';
+                row.innerHTML =
+                    '<div class="inputContainer he-device-name">' +
+                        '<label class="inputLabel inputLabelUnfocused">Name (optional)</label>' +
+                        '<input is="emby-input" type="text" class="he-device-name-input" placeholder="Living room" />' +
+                    '</div>' +
+                    '<div class="inputContainer">' +
+                        '<label class="inputLabel inputLabelUnfocused">Host</label>' +
+                        '<input is="emby-input" type="text" class="he-device-host-input" placeholder="hdhomerun.local" />' +
+                    '</div>' +
+                    '<button is="emby-button" type="button" class="raised he-device-remove" title="Remove device">' +
+                        '<span class="material-icons" aria-hidden="true">delete</span>' +
+                    '</button>';
+                row.querySelector('.he-device-name-input').value = device.Name || '';
+                row.querySelector('.he-device-host-input').value = device.Host || '';
+                row.querySelector('.he-device-remove').addEventListener('click', function () { row.remove(); });
+                $('heDevices').appendChild(row);
+            }
+
+            function loadConfig() {
+                return ApiClient.getPluginConfiguration(pluginId).then(function (cfg) {
+                    $('heDevices').innerHTML = '';
+                    var devices = cfg.Devices || [];
+                    if (devices.length === 0) {
+                        addDeviceRow();
+                    } else {
+                        devices.forEach(addDeviceRow);
+                    }
+                    $('heInterval').value = cfg.RefreshIntervalHours || 12;
+                });
+            }
+
+            function collectDevices() {
+                return Array.prototype.map.call(page.querySelectorAll('.he-device-row'), function (row) {
+                    return {
+                        Host: row.querySelector('.he-device-host-input').value.trim(),
+                        Name: row.querySelector('.he-device-name-input').value.trim(),
+                    };
+                }).filter(function (d) { return d.Host.length > 0; });
+            }
+
+            function saveConfig(e) {
+                e.preventDefault();
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(pluginId).then(function (cfg) {
+                    cfg.Devices = collectDevices();
+                    cfg.RefreshIntervalHours = Math.min(168, Math.max(1, parseInt($('heInterval').value, 10) || 12));
+                    ApiClient.updatePluginConfiguration(pluginId, cfg).then(function (r) {
+                        Dashboard.processPluginConfigurationUpdateResult(r);
+                    });
+                });
+                return false;
+            }
+
+            document.querySelector('#hdhrEpgConfigPage').addEventListener('pageshow', function () {
+                page = this;
+                Dashboard.showLoadingMsg();
+                Promise.all([loadConfig(), loadStatus()]).then(function () { Dashboard.hideLoadingMsg(); });
+
+                $('heSettingsForm').addEventListener('submit', saveConfig);
+                $('heRefresh').addEventListener('click', refreshNow);
+                $('heAddDevice').addEventListener('click', function () { addDeviceRow(); });
+                page.querySelectorAll('[data-copy-target]').forEach(function (btn) {
+                    btn.addEventListener('click', function () { copyField(btn.getAttribute('data-copy-target')); });
+                });
+            });
+        })();
+    </script>
+</div>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<title>HDHomeRun EPG for Jellyfin — Auto-Refreshing XMLTV Guide</title>
+<meta name="description" content="A free, open-source Jellyfin plugin that generates an auto-refreshing XMLTV guide from one or more HDHomeRun devices' own EPG, with channel ids pre-mapped to your tuner lineup. No manual channel mapping, no external scripts, no cron jobs." />
+<meta name="keywords" content="Jellyfin plugin, HDHomeRun, HDHomeRun EPG, XMLTV, Live TV guide, SiliconDust, Jellyfin Live TV, channel mapping, Jellyfin XMLTV guide" />
+<meta name="author" content="jtczrt" />
+<meta name="robots" content="index, follow" />
+<meta name="theme-color" content="#00a4dc" />
+<link rel="canonical" href="https://jtcozart.github.io/jellyfin-hdhomerun-guide-extractor/" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="HDHomeRun EPG for Jellyfin" />
+<meta property="og:title" content="HDHomeRun EPG for Jellyfin — Auto-Refreshing XMLTV Guide" />
+<meta property="og:description" content="Auto-refreshing XMLTV guide generated from your HDHomeRun device's own EPG, with channel ids pre-mapped to your tuner lineup. Install as a repository with auto-updates." />
+<meta property="og:url" content="https://jtcozart.github.io/jellyfin-hdhomerun-guide-extractor/" />
+<meta property="og:image" content="https://jtcozart.github.io/jellyfin-hdhomerun-guide-extractor/og-image.svg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="HDHomeRun EPG for Jellyfin" />
+<meta name="twitter:description" content="Auto-refreshing XMLTV guide generated from your HDHomeRun device's own EPG, with channel ids pre-mapped to your tuner lineup." />
+<meta name="twitter:image" content="https://jtcozart.github.io/jellyfin-hdhomerun-guide-extractor/og-image.svg" />
+
+<!-- Structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "HDHomeRun EPG for Jellyfin",
+  "applicationCategory": "MultimediaApplication",
+  "applicationSubCategory": "Jellyfin Plugin",
+  "operatingSystem": "Cross-platform (Jellyfin 10.11+)",
+  "description": "A free, open-source Jellyfin plugin that generates an auto-refreshing XMLTV guide from one or more HDHomeRun devices' own EPG, with channel ids pre-mapped to your tuner lineup.",
+  "url": "https://jtcozart.github.io/jellyfin-hdhomerun-guide-extractor/",
+  "downloadUrl": "https://github.com/JTCozart/jellyfin-hdhomerun-guide-extractor/releases",
+  "softwareHelp": "https://github.com/JTCozart/jellyfin-hdhomerun-guide-extractor#readme",
+  "license": "https://github.com/JTCozart/jellyfin-hdhomerun-guide-extractor/blob/master/LICENSE",
+  "author": { "@type": "Person", "name": "jtczrt", "url": "https://linktr.ee/jtczrt" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<style>
+  :root {
+    --bg: #0b0e13; --bg2: #11151c; --card: #161b24; --line: rgba(255,255,255,.08);
+    --text: #e7ecf3; --muted: #9aa6b6; --accent: #00a4dc; --accent2: #52b54b; --green: #52b54b;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #16202e 0%, var(--bg) 55%) no-repeat, var(--bg);
+    color: var(--text); line-height: 1.55; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+  header.nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .2px; }
+  .brand .logo { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: grid; place-items: center; color: #fff; font-size: 18px; }
+  .nav a.navlink { color: var(--muted); margin-left: 18px; font-size: .95rem; }
+  .nav a.navlink:hover { color: var(--text); text-decoration: none; }
+
+  .hero { text-align: center; padding: 56px 0 28px; }
+  .hero h1 { font-size: clamp(2.1rem, 5vw, 3.4rem); margin: 0 0 .3em; line-height: 1.1; }
+  .hero h1 .grad { background: linear-gradient(120deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p.lede { font-size: 1.2rem; color: var(--muted); max-width: 660px; margin: 0 auto 1.6em; }
+  .cta { display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 10px; font-weight: 600; border: 1px solid transparent; cursor: pointer; }
+  .btn-primary { background: var(--accent); color: #00202b; }
+  .btn-primary:hover { filter: brightness(1.08); text-decoration: none; }
+  .btn-ghost { background: transparent; border-color: var(--line); color: var(--text); }
+  .btn-ghost:hover { background: var(--bg2); text-decoration: none; }
+  .pills { margin-top: 22px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .pill { font-size: .8rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; }
+
+  /* Data-flow diagram, in place of a screenshot */
+  .flow { margin: 40px auto 0; max-width: 900px; border-radius: var(--radius); border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.5); background: var(--bg2); padding: 30px 20px; }
+  .flow-steps { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; }
+  .flow-box { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; font-size: .95rem; font-weight: 600; min-width: 140px; text-align: center; }
+  .flow-arrow { color: var(--accent); font-size: 1.4rem; }
+
+  section.block { padding: 56px 0; }
+  section.block h2 { font-size: 1.8rem; text-align: center; margin: 0 0 8px; }
+  section.block p.sub { text-align: center; color: var(--muted); max-width: 640px; margin: 0 auto 34px; }
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .feature { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+  .feature .ic { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font-size: 20px; background: rgba(0,164,220,.14); color: var(--accent); margin-bottom: 12px; }
+  .feature h3 { margin: 0 0 6px; font-size: 1.05rem; }
+  .feature p { margin: 0; color: var(--muted); font-size: .92rem; }
+
+  .install { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; }
+  .steps { counter-reset: step; display: grid; gap: 16px; }
+  .step { display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start; }
+  .step .num { counter-increment: step; width: 30px; height: 30px; border-radius: 50%; background: rgba(0,164,220,.16); color: var(--accent); display: grid; place-items: center; font-weight: 700; }
+  .step .num::before { content: counter(step); }
+  .code { display: flex; align-items: center; gap: 10px; background: #0b0e13; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .86rem; margin-top: 8px; overflow: auto; }
+  .code code { color: #cfe9f5; white-space: nowrap; }
+  .copy { margin-left: auto; background: var(--accent); color: #00202b; border: none; border-radius: 6px; padding: 6px 12px; font-weight: 600; cursor: pointer; font-size: .8rem; }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--muted); text-align: center; font-size: .9rem; }
+
+  @media (max-width: 760px) {
+    .features { grid-template-columns: 1fr; }
+    .flow-steps { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .nav .navlink.hide-sm { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="nav">
+    <div class="brand"><span class="logo">📺</span> HDHomeRun EPG</div>
+    <nav>
+      <a class="navlink hide-sm" href="#features">Features</a>
+      <a class="navlink" href="#install">Install</a>
+      <a class="navlink" href="https://github.com/JTCozart/jellyfin-hdhomerun-guide-extractor">GitHub</a>
+    </nav>
+  </header>
+</div>
+
+<div class="wrap">
+  <section class="hero">
+    <h1>Your HDHomeRun's guide, <span class="grad">already in Jellyfin</span></h1>
+    <p class="lede">A Jellyfin plugin that generates an auto-refreshing XMLTV guide from your HDHomeRun's own EPG, with channel ids pre-mapped to your tuner lineup. No manual mapping, no external scripts, no cron jobs.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#install">▾ Install in Jellyfin</a>
+      <a class="btn btn-ghost" href="https://github.com/JTCozart/jellyfin-hdhomerun-guide-extractor">★ View on GitHub</a>
+    </div>
+    <div class="pills">
+      <span class="pill">Jellyfin 10.11+</span>
+      <span class="pill">Auto-updating repo</span>
+      <span class="pill">Multiple devices</span>
+      <span class="pill">Admin-only</span>
+      <span class="pill">MIT licensed</span>
+    </div>
+
+    <div class="flow" role="img" aria-label="Data flow: HDHomeRun device to SiliconDust cloud API to XMLTV file to Jellyfin's guide provider">
+      <div class="flow-steps">
+        <div class="flow-box">HDHomeRun device(s)</div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box">SiliconDust cloud API</div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box">XMLTV file</div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box">Jellyfin's XMLTV guide provider</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+  <section class="block" id="features">
+    <h2>Set it up once, forget it</h2>
+    <p class="sub">Uses Jellyfin's own built-in XMLTV guide provider — this plugin just keeps the file it reads current.</p>
+    <div class="features">
+      <div class="feature"><div class="ic">📡</div><h3>Auto channel mapping</h3><p>Matches each lineup entry's guide number to the feed by display name, so channels line up with your tuner with zero manual mapping.</p></div>
+      <div class="feature"><div class="ic">🔁</div><h3>Scheduled refresh</h3><p>Regenerates the guide on a configurable interval (default 12 hours) — the file just stays current.</p></div>
+      <div class="feature"><div class="ic">🗂</div><h3>Multiple devices</h3><p>Configure more than one HDHomeRun and their guides are merged into a single file, deduplicated by channel.</p></div>
+      <div class="feature"><div class="ic">🧩</div><h3>No extra infrastructure</h3><p>No external scripts, no cron jobs, no separate container — it runs inside Jellyfin as a background service.</p></div>
+      <div class="feature"><div class="ic">📊</div><h3>Live status</h3><p>The plugin page shows channel/programme counts, last success, and any errors, plus a one-click "Refresh now".</p></div>
+      <div class="feature"><div class="ic">🔒</div><h3>Admin-only API</h3><p>Status and refresh are exposed under <code>/HdhrEpg</code>, gated behind Jellyfin's own elevated-admin policy.</p></div>
+    </div>
+  </section>
+
+  <section class="block" id="install">
+    <h2>Install in two minutes</h2>
+    <p class="sub">Add the repository once and install (plus future updates) straight from Jellyfin's catalog.</p>
+    <div class="install">
+      <div class="steps">
+        <div class="step"><div class="num"></div><div>
+          <strong>Open repositories.</strong> In Jellyfin go to <em>Dashboard → Plugins → Repositories</em> and click <em>＋</em>.
+        </div></div>
+        <div class="step"><div class="num"></div><div>
+          <strong>Add this repository URL.</strong>
+          <div class="code"><code id="repoUrl">https://raw.githubusercontent.com/JTCozart/jellyfin-hdhomerun-guide-extractor/master/manifest.json</code>
+          <button class="copy" onclick="copyUrl()">Copy</button></div>
+        </div></div>
+        <div class="step"><div class="num"></div><div>
+          <strong>Install the plugin.</strong> Open <em>Catalog</em>, find <em>HDHomeRun EPG</em> under Live TV, and click Install.
+        </div></div>
+        <div class="step"><div class="num"></div><div>
+          <strong>Restart Jellyfin</strong>, open <em>HDHomeRun EPG</em> from the Dashboard menu, set your device host(s), save, and click <em>Refresh now</em>.
+        </div></div>
+        <div class="step"><div class="num"></div><div>
+          <strong>Point the guide provider at the file.</strong> Go to <em>Dashboard → Live TV → Guide Data Providers → Add</em>, choose <em>XMLTV</em>, and paste in the file path shown on the plugin's page.
+        </div></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <nav class="footlinks" aria-label="Footer">
+      <a href="https://github.com/JTCozart/jellyfin-hdhomerun-guide-extractor">Source</a> ·
+      <a href="https://github.com/JTCozart/jellyfin-hdhomerun-guide-extractor/releases">Releases</a> ·
+      <a href="https://github.com/JTCozart/jellyfin-hdhomerun-guide-extractor/issues">Issues</a> ·
+      <a href="https://linktr.ee/jtczrt" rel="me">Linktree</a>
+    </nav>
+    <p style="margin:10px 0 0;">
+      Built by <a href="https://linktr.ee/jtczrt" rel="me author">@jtczrt</a> ·
+      MIT licensed · Not affiliated with SiliconDust or the Jellyfin project.
+    </p>
+    <p style="margin:14px 0 0;">
+      <a href="https://www.aihonestybadge.com" target="_blank" rel="noopener"><img src="https://www.aihonestybadge.com/badges/ai-generated.svg" alt="AI Generated Badge" style="max-width: 190px; height: auto;" /></a>
+    </p>
+  </div>
+</footer>
+
+<script>
+  function copyUrl() {
+    var url = document.getElementById('repoUrl').textContent.trim();
+    navigator.clipboard.writeText(url).then(function () {
+      var b = document.querySelector('.copy');
+      var t = b.textContent; b.textContent = 'Copied!';
+      setTimeout(function () { b.textContent = t; }, 1500);
+    });
+  }
+</script>
+</body>
+</html>
